@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedTriage AI - Clinical Decision Support & Triage</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans">
+
+    <!-- Header -->
+    <header class="bg-teal-700 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <span class="text-2xl font-bold bg-white text-teal-700 px-3 py-1 rounded-lg">🏥 MedTriage</span>
+                <div>
+                    <h1 class="text-xl font-bold">Clinical Case Triage & AI Support</h1>
+                    <p class="text-xs text-teal-200">Decision-Support System for Healthcare Professionals</p>
+                </div>
+            </div>
+            <div class="text-right text-xs bg-teal-800 px-3 py-2 rounded-lg border border-teal-600">
+                <p class="font-semibold">System Status: <span class="text-green-400">● Operational</span></p>
+                <p class="text-teal-300">HIPAA Compliant Mode</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        <!-- Left Column: Image Upload & Analysis -->
+        <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 lg:col-span-1 flex flex-col justify-between">
+            <div>
+                <h2 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                    <span>📤</span> Upload Clinical Case
+                </h2>
+                <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-teal-500 transition cursor-pointer bg-slate-50">
+                    <input type="file" id="fileInput" class="hidden" accept="image/*" onchange="previewImage(event)">
+                    <label for="fileInput" class="cursor-pointer">
+                        <div class="text-4xl mb-2">🩻</div>
+                        <p class="text-sm font-medium text-slate-700">Click to upload X-ray or CT Scan</p>
+                        <p class="text-xs text-slate-400 mt-1">Supports PNG, JPG, DICOM previews</p>
+                    </label>
+                </div>
+
+                <!-- Preview Box -->
+                <div id="previewContainer" class="mt-4 hidden">
+                    <p class="text-xs font-semibold text-slate-500 mb-2">Uploaded Scan Preview:</p>
+                    <img id="imagePreview" src="" alt="Scan preview" class="w-full h-40 object-cover rounded-lg border border-slate-200">
+                </div>
+
+                <!-- Quick Load Sample Cases -->
+                <div class="mt-6">
+                    <p class="text-xs font-semibold text-slate-500 mb-2">Or load sample case:</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="loadSample('Patient #1042 - Suspected Pneumonia', 'High')" class="text-xs bg-rose-50 text-rose-700 border border-rose-200 py-2 px-3 rounded hover:bg-rose-100 font-medium">Sample: Pneumonia</button>
+                        <button onclick="loadSample('Patient #1089 - Routine Check', 'Low')" class="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 py-2 px-3 rounded hover:bg-emerald-100 font-medium">Sample: Normal</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analyze Button -->
+            <button onclick="runAnalysis()" class="mt-6 w-full bg-teal-600 text-white py-3 rounded-lg font-semibold hover:bg-teal-700 transition shadow-md">
+                Run AI Diagnostic Analysis
+            </button>
+        </section>
+
+        <!-- Right Column: Results & Queue -->
+        <section class="lg:col-span-2 space-y-6">
+
+            <!-- Active Analysis Output -->
+            <div id="resultsCard" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hidden">
+                <h2 class="text-lg font-bold text-slate-900 mb-3 flex items-center gap-2">
+                    <span>🔬</span> Analysis Report
+                </h2>
+                <div id="loadingState" class="py-8 text-center hidden">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-teal-600 border-t-transparent"></div>
+                    <p class="text-sm text-slate-600 mt-2">Running neural network evaluation on medical dataset...</p>
+                </div>
+                <div id="reportContent" class="space-y-4">
+                    <div class="flex justify-between items-center bg-slate-50 p-4 rounded-lg border border-slate-100">
+                        <div>
+                            <p class="text-xs text-slate-500">Case ID</p>
+                            <p id="resCaseId" class="font-bold text-slate-800">--</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-500">Suggested Priority</p>
+                            <span id="resPriority" class="px-3 py-1 rounded-full text-xs font-bold">--</span>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-500">AI Confidence</p>
+                            <p id="resConfidence" class="font-bold text-teal-600">--</p>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold text-slate-500 mb-1">Key Clinical Findings:</p>
+                        <p id="resFindings" class="text-sm text-slate-700 bg-amber-50 border border-amber-200 p-3 rounded-lg">--</p>
+                    </div>
+                    <button onclick="addToQueue()" class="bg-slate-900 text-white text-xs px-4 py-2 rounded-lg font-medium hover:bg-slate-800">Add to Hospital Triage Queue</button>
+                </div>
+            </div>
+
+            <!-- Triage Queue Table -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <span>📋</span> Active Triage Priority Queue
+                    </h2>
+                    <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-full font-medium">Sorted by Acuity</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-200 text-xs text-slate-500">
+                                <th class="pb-3 font-semibold">Patient / Case</th>
+                                <th class="pb-3 font-semibold">AI Finding</th>
+                                <th class="pb-3 font-semibold">Confidence</th>
+                                <th class="pb-3 font-semibold">Priority Level</th>
+                                <th class="pb-3 font-semibold">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="queueTableBody" class="text-sm divide-y divide-slate-100">
+                            <tr>
+                                <td class="py-3 font-medium text-slate-800">Patient #1038</td>
+                                <td class="py-3 text-slate-600">Pleural Effusion</td>
+                                <td class="py-3 text-teal-600 font-semibold">94.2%</td>
+                                <td class="py-3"><span class="bg-rose-100 text-rose-700 px-2 py-1 rounded text-xs font-bold">High Priority</span></td>
+                                <td class="py-3"><button onclick="this.closest('tr').remove()" class="text-xs text-red-500 hover:underline">Dismiss</button></td>
+                            </tr>
+                            <tr>
+                                <td class="py-3 font-medium text-slate-800">Patient #1039</td>
+                                <td class="py-3 text-slate-600">Mild Bronchial Inflammation</td>
+                                <td class="py-3 text-teal-600 font-semibold">78.5%</td>
+                                <td class="py-3"><span class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-xs font-bold">Medium</span></td>
+                                <td class="py-3"><button onclick="this.closest('tr').remove()" class="text-xs text-red-500 hover:underline">Dismiss</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Footer Disclaimer -->
+    <footer class="max-w-7xl mx-auto px-4 py-6 text-center text-xs text-slate-400 border-t border-slate-200 mt-12">
+        <p>⚠️ <strong>Clinical Disclaimer:</strong> This software is a decision-support tool designed to assist medical professionals. It does not replace professional clinical judgment or formal diagnosis.</p>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        let currentSampleName = "Custom Upload";
+        let currentPriority = "Medium";
+        let currentConfidence = "88.4%";
+        let currentFindings = "Localized interstitial densities identified in right lower lobe requiring clinical review.";
+
+        function previewImage(event) {
+            const reader = new FileReader();
+            reader.onload = function(){
+                const output = document.getElementById('imagePreview');
+                output.src = reader.result;
+                document.getElementById('previewContainer').classList.remove('hidden');
+            };
+            reader.readAsDataURL(event.target.files[0]);
+        }
+
+        function loadSample(name, priority) {
+            currentSampleName = name;
+            currentPriority = priority;
+            currentConfidence = priority === 'High' ? '96.1%' : '91.8%';
+            currentFindings = priority === 'High' ? 'Significant consolidation patterns detected. High indicator for acute infection.' : 'Clear lung fields. No acute cardiopulmonary abnormalities detected.';
+            
+            document.getElementById('resultsCard').classList.remove('hidden');
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('reportContent').classList.add('hidden');
+
+            setTimeout(() => {
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('reportContent').classList.remove('hidden');
+                document.getElementById('resCaseId').innerText = currentSampleName;
+                document.getElementById('resConfidence').innerText = currentConfidence;
+                document.getElementById('resFindings').innerText = currentFindings;
+                
+                const badge = document.getElementById('resPriority');
+                badge.innerText = currentPriority + ' Priority';
+                badge.className = currentPriority === 'High' 
+                    ? 'px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700' 
+                    : 'px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700';
+            }, 800);
+        }
+
+        function runAnalysis() {
+            loadSample('Patient #' + Math.floor(1100 + Math.random() * 900), Math.random() > 0.5 ? 'High' : 'Medium');
+        }
+
+        function addToQueue() {
+            const tbody = document.getElementById('queueTableBody');
+            const row = document.createElement('tr');
+            const badgeClass = currentPriority === 'High' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700';
+            
+            row.innerHTML = `
+                <td class="py-3 font-medium text-slate-800">${currentSampleName}</td>
+                <td class="py-3 text-slate-600">${currentFindings.substring(0, 30)}...</td>
+                <td class="py-3 text-teal-600 font-semibold">${currentConfidence}</td>
+                <td class="py-3"><span class="${badgeClass} px-2 py-1 rounded text-xs font-bold">${currentPriority} Priority</span></td>
+                <td class="py-3"><button onclick="this.closest('tr').remove()" class="text-xs text-red-500 hover:underline">Dismiss</button></td>
+            `;
+            tbody.prepend(row);
+            alert('Case added to hospital queue successfully!');
+        }
+    </script>
+</body>
+</html>
